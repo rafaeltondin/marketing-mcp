@@ -1,0 +1,45 @@
+# Referência: web (painel+API+MCP) e worker (ETL) da MESMA imagem, escalados
+# separadamente. Para o modo simples de 1 processo, use só o serviço `web`
+# com ROLE=all e remova o `worker`.
+services:
+  web:
+    build: .
+    image: storekit:local
+    restart: unless-stopped
+    environment:
+      ROLE: web
+      DB_KEY: ${DB_KEY:?defina no .env — gere com npm run genkeys}
+      PII_KEY: ${PII_KEY:?defina no .env}
+      JWT_SECRET: ${JWT_SECRET:?defina no .env}
+      MCP_TOKEN: ${MCP_TOKEN:-}
+      TENANT: ${TENANT:-default}
+      DATA_DIR: /data
+      PORT: "3000"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      APP_VERSION: ${APP_VERSION:-dev}
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - storekit-data:/data
+
+  worker:
+    image: storekit:local
+    build: .
+    restart: unless-stopped
+    environment:
+      ROLE: worker
+      DB_KEY: ${DB_KEY:?defina no .env}
+      PII_KEY: ${PII_KEY:?defina no .env}
+      JWT_SECRET: ${JWT_SECRET:?defina no .env}
+      TENANT: ${TENANT:-default}
+      DATA_DIR: /data
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      APP_VERSION: ${APP_VERSION:-dev}
+    volumes:
+      - storekit-data:/data
+    depends_on:
+      - web
+
+volumes:
+  storekit-data:
