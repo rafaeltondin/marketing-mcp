@@ -2,6 +2,33 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.3.0] — 2026-07-25
+
+### Adicionado
+- **Painel reestruturado em 7 abas** (Visão Geral, Vendas, Produtos, Clientes, Tráfego & Ads,
+  Custos & Margem, Sistema), espelhando a arquitetura do Painel Fiber. Antes só 3 blocos numa
+  página única expunham 4 das 16 métricas; agora **todas as 16** têm lugar na UI.
+- Topbar fixa com logo/nome da loja, alternador de tema claro/escuro (persistido em
+  `localStorage`) e botão de sair; subbar fixa com as abas (navegação por setas do teclado,
+  `role=tablist`, estado refletido no hash da URL).
+- KPI cards no padrão do Fiber: rótulo uppercase com tracking, ícone, valor tabular e **delta
+  vs período anterior** (verde/vermelho, invertido para gasto/CAC/descontos — subir é ruim).
+  A variação vem de `comparar_periodos`, sem 2ª chamada de `kpis`.
+- Blocos com os 3 estados padronizados: skeleton shimmer enquanto carrega, erro inline (um bloco
+  quebrado não derruba a tela) e vazio com mensagem adequada ao contexto.
+- Métrica indisponível agora **explica o que falta** ("conecte meta, ga4 para ver esta seção")
+  em vez de simplesmente não aparecer.
+- Carga por aba sob demanda (a aba só busca dados quando é aberta) e filtro de período por aba.
+- Busca de produtos por texto e previsão de ruptura expostas na UI (já existiam na API/MCP).
+
+### Alterado
+- CSS reescrito sobre a **escala Fibonacci** (espaçamento/raio/fonte), como no Painel Fiber,
+  com sombras em 3 níveis e `prefers-reduced-motion` respeitado. Diferença consciente: o Fiber
+  carrega Montserrat/Poppins do Google Fonts; aqui a CSP é `default-src 'self'` (sem host
+  externo), então o mesmo tratamento tipográfico (uppercase + tracking largo) é aplicado sobre
+  a fonte do sistema.
+- Favicon da página passa a usar o favicon detectado da loja.
+
 ## [0.2.2] — 2026-07-25
 
 ### Corrigido
