@@ -2,6 +2,28 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.2.1] — 2026-07-25
+
+### Corrigido
+- Logo da loja gravado como `shopify://shop_images/<arquivo>` (referência interna do tema,
+  não uma URL válida) não carregava no painel/login — `extrairIdentidade()` agora resolve essa
+  referência pro CDN real via GraphQL Admin (`files`). Fallback defensivo: se a imagem falhar em
+  runtime (URL quebrada/removida), cai pro avatar com a inicial da loja em vez de ficar vazio.
+- Dependências com CVE crítico corrigidas: `@fastify/jwt` 9→10 (`fast-jwt` tinha bypass de auth
+  via segredo HMAC vazio e confusão de cache trocando claims entre tokens — CVEs GHSA-gmvf-9v4p-v8jc/
+  GHSA-rp9m-7r4c-75qg entre outros); `node-cron` 3→4 (CVE de `uuid` transitivo). `@fastify/static`
+  removido (dependência não usada em lugar nenhum do código, tinha CVE alto de path traversal).
+  Residual aceito: 1 CVE moderado transitivo (`@hono/node-server` via `@modelcontextprotocol/sdk`)
+  é path-traversal específico de Windows — irrelevante no nosso deploy (Linux/Docker).
+
+### Alterado
+- Visual do painel/login realinhado ao padrão do Painel Fiber (referência real extraída via
+  inspeção computada, não só olhando print): cards com sombra suave + raio 13px, botões em
+  gradiente com sombra na cor da marca, títulos/labels uppercase com tracking largo, fundo com
+  glow radial sutil na cor da marca — tudo via `color-mix()` sobre os tokens de marca existentes
+  (mantém a auto-adequação de cor por loja, não hardcoda a cor do Fiber). Logo real (quando existe)
+  não é mais forçado num quadrado — exibido no tamanho natural, sem cortar.
+
 ## [0.2.0] — 2026-07-24
 
 ### Adicionado

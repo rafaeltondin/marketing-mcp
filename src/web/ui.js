@@ -22,23 +22,29 @@ ${linhas(escuro)}
 const BASE = () => `
   *,*::before,*::after{box-sizing:border-box}
   body{margin:0;font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-       background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+       background:radial-gradient(at 50% 0%, color-mix(in srgb, var(--brand,var(--action)) 7%, transparent), transparent 60%) fixed,
+                  var(--bg);
+       color:var(--ink);-webkit-font-smoothing:antialiased}
   .wrap{max-width:1100px;margin:0 auto;padding:clamp(1rem,4vw,2.5rem)}
   header{display:flex;align-items:center;gap:.75rem;margin-bottom:2rem;flex-wrap:wrap}
   header img{height:34px;width:auto;border-radius:6px}
-  h1{font-size:clamp(1.25rem,3vw,1.6rem);margin:0;letter-spacing:-.02em}
+  h1{font-size:clamp(1rem,3vw,1.15rem);margin:0;letter-spacing:.12em;text-transform:uppercase;font-weight:800}
   .sub{color:var(--ink-2);font-size:.9rem}
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;
-        padding:1.25rem;margin-bottom:1rem}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:13px;
+        padding:1.25rem;margin-bottom:1rem;box-shadow:0 5px 21px rgba(0,0,0,.07)}
   .grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
   .kpi{font-size:clamp(1.4rem,4vw,2rem);font-weight:650;letter-spacing:-.02em;margin:.15rem 0 0}
   .rot{color:var(--ink-2);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
-  button,.btn{background:var(--action);color:var(--action-ink);border:0;border-radius:9px;
-        padding:.62rem 1.05rem;font-size:.94rem;font-weight:550;cursor:pointer;font-family:inherit}
-  button:hover{filter:brightness(1.08)} button:disabled{opacity:.55;cursor:not-allowed}
-  input{width:100%;padding:.6rem .7rem;border:1px solid var(--line);border-radius:8px;
+  button,.btn{background:linear-gradient(135deg, var(--action), color-mix(in srgb, var(--action) 78%, black));
+        color:var(--action-ink);border:0;border-radius:9px;
+        box-shadow:0 3px 13px color-mix(in srgb, var(--action) 25%, transparent);
+        padding:.7rem 1.15rem;font-size:.82rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+        cursor:pointer;font-family:inherit}
+  button:hover{filter:brightness(1.06)} button:disabled{opacity:.55;cursor:not-allowed;filter:none;box-shadow:none}
+  input{width:100%;padding:.75rem .8rem;border:1px solid var(--line);border-radius:8px;
         background:var(--bg);color:var(--ink);font:inherit;font-size:.94rem}
-  label{display:block;margin:.75rem 0 .25rem;font-size:.86rem;color:var(--ink-2)}
+  label{display:block;margin:.75rem 0 .35rem;font-size:.72rem;font-weight:700;
+        letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
   table{width:100%;border-collapse:collapse;font-size:.9rem}
   th,td{text-align:left;padding:.5rem .4rem;border-bottom:1px solid var(--line)}
   th{color:var(--ink-2);font-weight:550;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
@@ -59,21 +65,21 @@ const BASE = () => `
 
   .auth-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
   .auth-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);
-        border-radius:16px;padding:2.1rem 1.9rem;box-shadow:0 1px 2px rgba(0,0,0,.05),0 16px 40px -16px rgba(0,0,0,.22)}
-  .auth-logo{width:56px;height:56px;border-radius:14px;margin:0 auto .9rem;overflow:hidden;
-        display:flex;align-items:center;justify-content:center;background:var(--action);
+        border-radius:13px;padding:2.6rem 2rem;box-shadow:0 5px 21px rgba(0,0,0,.08)}
+  .auth-logo{margin:0 auto .9rem;display:flex;align-items:center;justify-content:center}
+  .auth-logo.is-avatar{width:56px;height:56px;border-radius:14px;background:var(--action);
         color:var(--action-ink);font-size:1.3rem;font-weight:650}
-  .auth-logo img{width:100%;height:100%;object-fit:cover}
+  .auth-logo img{max-height:64px;max-width:220px;width:auto;height:auto;object-fit:contain}
   .auth-head{text-align:center;margin-bottom:1.6rem}
-  .auth-head h1{font-size:1.2rem;margin:0 0 .2rem;letter-spacing:-.01em}
+  .auth-head h1{font-size:1.05rem;margin:0 0 .35rem;letter-spacing:.16em;text-transform:uppercase;font-weight:800}
   .auth-head p{margin:0;color:var(--ink-2);font-size:.86rem}
   .field{margin-bottom:1.1rem}
   .field label{margin:0 0 .35rem}
   .pwd-wrap{position:relative}
   .pwd-wrap input{padding-right:3.4rem}
   .pwd-toggle{position:absolute;right:.35rem;top:50%;transform:translateY(-50%);background:none;
-        border:0;padding:.4rem .5rem;color:var(--ink-2);cursor:pointer;font-size:.76rem;
-        font-weight:600;border-radius:6px}
+        border:0;box-shadow:none;padding:.4rem .5rem;color:var(--ink-2);cursor:pointer;font-size:.76rem;
+        font-weight:600;text-transform:none;letter-spacing:normal;border-radius:6px}
   .pwd-toggle:hover{color:var(--ink);background:var(--line)}
   .auth-submit{width:100%;margin-top:.3rem;display:flex;align-items:center;justify-content:center;gap:.55rem}
   .spinner{width:14px;height:14px;border-radius:50%;flex:none;
@@ -96,15 +102,17 @@ function layoutAuth({ titulo, marca, corpo, script = '', nonce = '' }) {
 function layout({ titulo, marca, corpo, script = '', nonce = '' }) {
   const logo = marca?.logo || marca?.logoUrl;
   const n = nonce ? ` nonce="${esc(nonce)}"` : '';
+  // Logo pode falhar em runtime (URL do tema mudou/removida) — some sem deixar ícone quebrado.
+  const scriptFinal = `document.getElementById('headerLogo')?.addEventListener('error', function(){ this.remove(); });\n${script}`;
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(titulo)}</title>
 <style${n}>${tokensCss(marca)}${BASE(marca)}</style></head>
 <body><div class="wrap">
-<header>${logo ? `<img src="${esc(logo)}" alt="">` : ''}<div><h1>${esc(titulo)}</h1></div></header>
+<header>${logo ? `<img id="headerLogo" src="${esc(logo)}" alt="">` : ''}<div><h1>${esc(titulo)}</h1></div></header>
 ${corpo}
 <footer>storekit ${esc(process.env.APP_VERSION ?? 'dev')} — painel, ETL, MCP e RAG numa imagem</footer>
-</div><script${n}>${script}</script></body></html>`;
+</div><script${n}>${scriptFinal}</script></body></html>`;
 }
 
 // Helpers de gráfico embutidos no cliente (sem dependência; usam a paleta acessível).
@@ -199,9 +207,13 @@ export function paginaLogin({ config, nonce }) {
   const nomeLoja = config.get('store.name') ?? 'Painel';
   const inicial = esc(nomeLoja.trim().charAt(0).toUpperCase() || 'P');
 
+  const logoHtml = logo
+    ? `<div class="auth-logo" id="authLogo"><img id="authLogoImg" src="${esc(logo)}" alt=""></div>`
+    : `<div class="auth-logo is-avatar" id="authLogo">${inicial}</div>`;
+
   const corpo = `<div class="auth-shell"><div class="auth-card">
     <div class="auth-head">
-      <div class="auth-logo">${logo ? `<img src="${esc(logo)}" alt="">` : inicial}</div>
+      ${logoHtml}
       <h1>${esc(nomeLoja)}</h1>
       <p>Entrar no painel</p>
     </div>
@@ -229,6 +241,13 @@ export function paginaLogin({ config, nonce }) {
   const elErro = document.getElementById('e');
   const campoSenha = document.getElementById('p');
   const olho = document.getElementById('btnOlho');
+
+  // Logo real pode falhar em runtime (URL do tema mudou) — cai pro avatar com a inicial.
+  document.getElementById('authLogoImg')?.addEventListener('error', function() {
+    const wrap = document.getElementById('authLogo');
+    wrap.classList.add('is-avatar');
+    wrap.textContent = ${JSON.stringify(inicial)};
+  });
 
   olho.addEventListener('click', () => {
     const mostrar = campoSenha.type === 'password';
