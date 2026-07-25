@@ -2,6 +2,13 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.3.1] — 2026-07-25
+
+### Corrigido
+- Card de login/setup ficou estreito demais na reescrita da 0.3.0 (`max-width` caiu para
+  `--fib-233` = 233px, apertando o título da loja em duas linhas). Voltou para 377px (largura do
+  card do Painel Fiber, também Fibonacci: 233+144); o wizard de setup foi para 610px (377+233).
+
 ## [0.3.0] — 2026-07-25
 
 ### Adicionado
