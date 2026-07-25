@@ -1,11 +1,13 @@
 {
   "name": "storekit",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Painel + ETL + MCP + RAG multi-loja Shopify numa imagem Docker.",
   "license": "MIT",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node src/main.js",
     "test": "node --test test/*.test.js",
