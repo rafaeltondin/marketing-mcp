@@ -280,7 +280,7 @@ export async function criarServidor({ db, config, cofre, conectores, metricas, l
       `script-src 'nonce-${nonce}'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`);
     if (!temUsuario() || !config.configurado()) return paginaSetup({ config, conectores, temAdmin: temUsuario(), nonce });
     try { await req.jwtVerify(); } catch { return paginaLogin({ config, nonce }); }
-    return paginaPainel({ config, conectores, metricas, nonce });
+    return paginaPainel({ config, conectores, metricas, nonce, usuario: req.user?.username ?? null });
   });
 
   app.setNotFoundHandler((req, reply) => {
