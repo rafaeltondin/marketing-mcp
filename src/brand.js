@@ -133,10 +133,25 @@ function paletaGraficos(H0) {
   return out;
 }
 
+async function buscarArquivo(http, query) {
+  const resp = await http.post('/graphql.json', {
+    query: `query($q: String!) { files(first: 1, query: $q) { edges { node {
+      ... on MediaImage { image { url } }
+      ... on GenericFile { url }
+    } } } }`,
+    variables: { q: query },
+  });
+  const node = resp?.data?.files?.edges?.[0]?.node;
+  return node?.image?.url ?? node?.url ?? null;
+}
+
 // Configurações de imagem do tema guardam "shopify://shop_images/<arquivo>" —
 // uma referência interna que o Liquid resolve em runtime, mas que não é uma
 // URL válida pra <img src>. Resolve pro CDN real via GraphQL Admin (Files).
-async function resolverArquivoShopify(http, referencia, log) {
+// `termoFallback` cobre o caso da referência estar órfã (arquivo renomeado/
+// substituído desde que o tema foi configurado — visto em produção: a busca
+// pelo nome exato salvo no tema não bate mais com nenhum file da loja).
+async function resolverArquivoShopify(http, referencia, log, termoFallback) {
   const nome = referencia?.replace(/^shopify:\/\/shop_images\//, '');
   // Allowlist: nome de arquivo real do Shopify (letras/números/._- ), nunca sintaxe
   // de busca (aspas, dois-pontos, wildcard) que poderia distorcer a query GraphQL.
@@ -145,15 +160,12 @@ async function resolverArquivoShopify(http, referencia, log) {
     return null;
   }
   try {
-    const resp = await http.post('/graphql.json', {
-      query: `query($q: String!) { files(first: 1, query: $q) { edges { node {
-        ... on MediaImage { image { url } }
-        ... on GenericFile { url }
-      } } } }`,
-      variables: { q: `filename:${nome}` },
-    });
-    const node = resp?.data?.files?.edges?.[0]?.node;
-    return node?.image?.url ?? node?.url ?? null;
+    const exato = await buscarArquivo(http, `filename:${nome}`);
+    if (exato) return exato;
+    if (!termoFallback) return null;
+    const aprox = await buscarArquivo(http, termoFallback);
+    if (aprox) log?.warn('brand', 'referência de imagem órfã no tema — usando arquivo achado por palavra-chave', { referencia, termoFallback });
+    return aprox;
   } catch (e) {
     log?.warn('brand', 'falha ao resolver imagem shopify://', { erro: e.message, referencia });
     return null;
@@ -201,10 +213,10 @@ export async function extrairIdentidade({ shop, accessToken, log }) {
     resultado.favicon = cur.favicon ?? null;
 
     if (resultado.logo?.startsWith('shopify://')) {
-      resultado.logo = await resolverArquivoShopify(http, resultado.logo, log);
+      resultado.logo = await resolverArquivoShopify(http, resultado.logo, log, 'logo');
     }
     if (resultado.favicon?.startsWith('shopify://')) {
-      resultado.favicon = await resolverArquivoShopify(http, resultado.favicon, log);
+      resultado.favicon = await resolverArquivoShopify(http, resultado.favicon, log, 'favicon');
     }
   } catch (e) {
     log?.warn('brand', 'não foi possível ler o tema', { erro: e.message });

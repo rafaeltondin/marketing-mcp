@@ -2,6 +2,16 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.2.2] — 2026-07-25
+
+### Corrigido
+- Resolução de logo/favicon `shopify://` ganhou um 2º nível de busca: em produção (Pinha) a
+  referência exata salva no tema não batia com nenhum arquivo da loja (arquivo renomeado/
+  substituído desde que o tema foi configurado — órfã). Agora, se a busca exata falhar, tenta
+  achar por palavra-chave (`logo`/`favicon`) antes de desistir e cair pro avatar. Também
+  adicionada allowlist (`/^[\w.-]+$/`) no nome do arquivo antes de montar a query GraphQL
+  (achado do defensive-engineering-reviewer — risco baixo mas correção de 1 linha).
+
 ## [0.2.1] — 2026-07-25
 
 ### Corrigido
