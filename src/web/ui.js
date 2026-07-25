@@ -56,7 +56,42 @@ const BASE = () => `
   .leg i{width:11px;height:11px;border-radius:3px;display:inline-block}
   footer{margin-top:2.5rem;color:var(--ink-2);font-size:.8rem}
   @media(max-width:520px){.wrap{padding:1rem}}
+
+  .auth-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+  .auth-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);
+        border-radius:16px;padding:2.1rem 1.9rem;box-shadow:0 1px 2px rgba(0,0,0,.05),0 16px 40px -16px rgba(0,0,0,.22)}
+  .auth-logo{width:56px;height:56px;border-radius:14px;margin:0 auto .9rem;overflow:hidden;
+        display:flex;align-items:center;justify-content:center;background:var(--action);
+        color:var(--action-ink);font-size:1.3rem;font-weight:650}
+  .auth-logo img{width:100%;height:100%;object-fit:cover}
+  .auth-head{text-align:center;margin-bottom:1.6rem}
+  .auth-head h1{font-size:1.2rem;margin:0 0 .2rem;letter-spacing:-.01em}
+  .auth-head p{margin:0;color:var(--ink-2);font-size:.86rem}
+  .field{margin-bottom:1.1rem}
+  .field label{margin:0 0 .35rem}
+  .pwd-wrap{position:relative}
+  .pwd-wrap input{padding-right:3.4rem}
+  .pwd-toggle{position:absolute;right:.35rem;top:50%;transform:translateY(-50%);background:none;
+        border:0;padding:.4rem .5rem;color:var(--ink-2);cursor:pointer;font-size:.76rem;
+        font-weight:600;border-radius:6px}
+  .pwd-toggle:hover{color:var(--ink);background:var(--line)}
+  .auth-submit{width:100%;margin-top:.3rem;display:flex;align-items:center;justify-content:center;gap:.55rem}
+  .spinner{width:14px;height:14px;border-radius:50%;flex:none;
+        border:2px solid rgba(255,255,255,.45);border-top-color:currentColor;
+        animation:girar .7s linear infinite;display:none}
+  .auth-submit.loading .spinner{display:inline-block}
+  .auth-foot{text-align:center;margin-top:1.4rem;color:var(--ink-2);font-size:.76rem}
+  @keyframes girar{to{transform:rotate(360deg)}}
 `;
+
+function layoutAuth({ titulo, marca, corpo, script = '', nonce = '' }) {
+  const n = nonce ? ` nonce="${esc(nonce)}"` : '';
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(titulo)}</title>
+<style${n}>${tokensCss(marca)}${BASE()}</style></head>
+<body>${corpo}<script${n}>${script}</script></body></html>`;
+}
 
 function layout({ titulo, marca, corpo, script = '', nonce = '' }) {
   const logo = marca?.logo || marca?.logoUrl;
@@ -160,19 +195,73 @@ export function paginaSetup({ config, conectores, temAdmin, nonce }) {
 
 export function paginaLogin({ config, nonce }) {
   const marca = config.get('brand');
-  const corpo = `<div class="card" style="max-width:380px;margin:8vh auto">
-    <h2 style="margin:0 0 .8rem;font-size:1.1rem">Entrar</h2>
-    <label>Usuário</label><input id="u" autocomplete="username">
-    <label>Senha</label><input id="p" type="password" autocomplete="current-password">
-    <p><button id="btnEntrar">Entrar</button></p><div id="e"></div></div>`;
-  const script = `async function entrar(){
-    const r=await fetch('/api/login',{method:'POST',headers:{'content-type':'application/json'},
-      body:JSON.stringify({username:u.value,password:p.value})});
-    if(r.ok) location.reload(); else document.getElementById('e').innerHTML='<div class="msg err">credenciais inválidas</div>';
+  const logo = marca?.logo || marca?.logoUrl;
+  const nomeLoja = config.get('store.name') ?? 'Painel';
+  const inicial = esc(nomeLoja.trim().charAt(0).toUpperCase() || 'P');
+
+  const corpo = `<div class="auth-shell"><div class="auth-card">
+    <div class="auth-head">
+      <div class="auth-logo">${logo ? `<img src="${esc(logo)}" alt="">` : inicial}</div>
+      <h1>${esc(nomeLoja)}</h1>
+      <p>Entrar no painel</p>
+    </div>
+    <form id="fLogin" novalidate>
+      <div class="field"><label for="u">Usuário</label>
+        <input id="u" name="username" autocomplete="username" autocapitalize="off" required></div>
+      <div class="field"><label for="p">Senha</label>
+        <div class="pwd-wrap">
+          <input id="p" name="password" type="password" autocomplete="current-password" required>
+          <button type="button" class="pwd-toggle" id="btnOlho" aria-label="Mostrar senha">mostrar</button>
+        </div>
+      </div>
+      <div id="e" role="alert" aria-live="polite"></div>
+      <button type="submit" class="auth-submit" id="btnEntrar">
+        <span class="spinner"></span><span id="txtBtn">Entrar</span>
+      </button>
+    </form>
+    <p class="auth-foot">storekit ${esc(process.env.APP_VERSION ?? 'dev')}</p>
+  </div></div>`;
+
+  const script = `
+  const form = document.getElementById('fLogin');
+  const btn = document.getElementById('btnEntrar');
+  const txtBtn = document.getElementById('txtBtn');
+  const elErro = document.getElementById('e');
+  const campoSenha = document.getElementById('p');
+  const olho = document.getElementById('btnOlho');
+
+  olho.addEventListener('click', () => {
+    const mostrar = campoSenha.type === 'password';
+    campoSenha.type = mostrar ? 'text' : 'password';
+    olho.textContent = mostrar ? 'ocultar' : 'mostrar';
+    olho.setAttribute('aria-label', mostrar ? 'Ocultar senha' : 'Mostrar senha');
+  });
+
+  async function entrar(ev) {
+    ev.preventDefault();
+    elErro.innerHTML = '';
+    btn.disabled = true; btn.classList.add('loading'); txtBtn.textContent = 'Entrando…';
+    try {
+      const r = await fetch('/api/login', {
+        method: 'POST', headers: {'content-type':'application/json'},
+        body: JSON.stringify({ username: document.getElementById('u').value, password: campoSenha.value }),
+      });
+      if (r.ok) { location.reload(); return; }
+      const d = await r.json().catch(() => ({}));
+      const msg = r.status === 401 ? 'usuário ou senha incorretos'
+        : r.status === 429 ? 'muitas tentativas — aguarde um pouco e tente de novo'
+        : (d.erro || d.message || 'falha ao entrar');
+      elErro.innerHTML = '<div class="msg err">' + msg + '</div>';
+    } catch (e) {
+      elErro.innerHTML = '<div class="msg err">falha de conexão — tente novamente</div>';
+    } finally {
+      btn.disabled = false; btn.classList.remove('loading'); txtBtn.textContent = 'Entrar';
+    }
   }
-  document.getElementById('btnEntrar').addEventListener('click',entrar);
-  addEventListener('keydown',e=>{if(e.key==='Enter')entrar()})`;
-  return layout({ titulo: config.get('store.name') ?? 'Painel', marca, corpo, script, nonce });
+  form.addEventListener('submit', entrar);
+  document.getElementById('u').focus();`;
+
+  return layoutAuth({ titulo: nomeLoja, marca, corpo, script, nonce });
 }
 
 export function paginaPainel({ config, conectores, metricas, nonce }) {
