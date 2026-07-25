@@ -133,6 +133,33 @@ function paletaGraficos(H0) {
   return out;
 }
 
+// Configurações de imagem do tema guardam "shopify://shop_images/<arquivo>" —
+// uma referência interna que o Liquid resolve em runtime, mas que não é uma
+// URL válida pra <img src>. Resolve pro CDN real via GraphQL Admin (Files).
+async function resolverArquivoShopify(http, referencia, log) {
+  const nome = referencia?.replace(/^shopify:\/\/shop_images\//, '');
+  // Allowlist: nome de arquivo real do Shopify (letras/números/._- ), nunca sintaxe
+  // de busca (aspas, dois-pontos, wildcard) que poderia distorcer a query GraphQL.
+  if (!nome || !/^[\w.-]+$/.test(nome)) {
+    if (nome) log?.warn('brand', 'nome de arquivo shopify:// fora do formato esperado, ignorando', { referencia });
+    return null;
+  }
+  try {
+    const resp = await http.post('/graphql.json', {
+      query: `query($q: String!) { files(first: 1, query: $q) { edges { node {
+        ... on MediaImage { image { url } }
+        ... on GenericFile { url }
+      } } } }`,
+      variables: { q: `filename:${nome}` },
+    });
+    const node = resp?.data?.files?.edges?.[0]?.node;
+    return node?.image?.url ?? node?.url ?? null;
+  } catch (e) {
+    log?.warn('brand', 'falha ao resolver imagem shopify://', { erro: e.message, referencia });
+    return null;
+  }
+}
+
 // ---- extração da identidade da loja ---------------------------------------
 // shop.brand NÃO existe na Admin API (testado em 7 versões, 2023-10..2025-07).
 // A fonte boa é o settings_data.json do tema principal.
@@ -172,6 +199,13 @@ export async function extrairIdentidade({ shop, accessToken, log }) {
 
     resultado.logo = cur.checkout_logo_image ?? cur.logo ?? cur.logo_image ?? null;
     resultado.favicon = cur.favicon ?? null;
+
+    if (resultado.logo?.startsWith('shopify://')) {
+      resultado.logo = await resolverArquivoShopify(http, resultado.logo, log);
+    }
+    if (resultado.favicon?.startsWith('shopify://')) {
+      resultado.favicon = await resolverArquivoShopify(http, resultado.favicon, log);
+    }
   } catch (e) {
     log?.warn('brand', 'não foi possível ler o tema', { erro: e.message });
   }
