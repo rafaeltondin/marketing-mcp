@@ -237,6 +237,55 @@ const BASE = () => `
         display:flex;flex-direction:column;gap:var(--fib-21)}
   .setup-wrap .block{max-width:none}
   .rot{color:var(--ink-2);font-size:var(--fib-8);text-transform:uppercase;letter-spacing:.13em;font-weight:700}
+
+  /* ---------- cards de conector (setup + aba Sistema) ---------- */
+  .conn-grid{display:grid;gap:var(--fib-21);grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .conn-card{background:var(--surface);border:var(--fib-1) solid var(--line);border-radius:var(--fib-13);
+        box-shadow:var(--shadow-sm);padding:var(--fib-21);display:flex;flex-direction:column;gap:var(--fib-13);
+        transition:box-shadow .2s var(--ease),border-color .2s var(--ease)}
+  .conn-card:hover{box-shadow:var(--shadow-md)}
+  .conn-card--conectado{border-color:color-mix(in srgb,var(--ok) 40%,var(--line))}
+  .conn-card--erro{border-color:color-mix(in srgb,var(--erro) 40%,var(--line))}
+  .conn-card__head{display:flex;align-items:center;gap:var(--fib-13)}
+  .conn-card__avatar{flex:none;width:var(--fib-34);height:var(--fib-34);border-radius:var(--fib-8);
+        background:var(--action);color:var(--action-ink);display:flex;align-items:center;justify-content:center;
+        font-weight:800;font-size:var(--fib-13)}
+  .conn-card__title{display:flex;flex-direction:column;gap:var(--fib-2);min-width:0}
+  .conn-card__name{font-weight:800;font-size:var(--fib-13)}
+  .conn-card__meta{font-size:var(--fib-8);color:var(--ink-muted)}
+  .conn-card__status{margin-left:auto;flex:none}
+  .conn-card__help{font-size:var(--fib-8);color:var(--ink-muted);line-height:1.5}
+  .conn-card__fields{display:grid;gap:var(--fib-13);grid-template-columns:1fr 1fr}
+  .conn-card__fields .field{margin:0}
+  .conn-card__fields .field--full{grid-column:1/-1}
+  .conn-card__actions{display:flex;flex-wrap:wrap;gap:var(--fib-8);align-items:center;margin-top:var(--fib-5)}
+  .conn-card__result{font-size:var(--fib-13)}
+  .conn-card[data-expandido="0"] .conn-card__body{display:none}
+  .conn-card__toggle{background:none;border:0;box-shadow:none;color:var(--action);padding:0;
+        text-transform:none;letter-spacing:normal;font-weight:700;font-size:var(--fib-13)}
+  .conn-card__toggle:hover{filter:none;text-decoration:underline}
+
+  /* ---------- banner de chamada (ex.: conectar GA4/Meta a partir da aba Ads) ---------- */
+  .banner{display:flex;align-items:center;gap:var(--fib-13);flex-wrap:wrap;background:var(--surface-2);
+        border:var(--fib-1) dashed var(--line);border-radius:var(--fib-13);padding:var(--fib-13) var(--fib-21)}
+  .banner__icon{font-size:var(--fib-21);opacity:.75;flex:none}
+  .banner__text{flex:1;min-width:200px;font-size:var(--fib-13);color:var(--ink-2)}
+  .banner__text strong{color:var(--ink)}
+
+  /* ---------- botão copiar (aba Sistema) ---------- */
+  .copy-btn{display:inline-flex;align-items:center;gap:var(--fib-3);background:none;border:var(--fib-1) solid var(--line);
+        box-shadow:none;color:var(--ink-2);padding:var(--fib-3) var(--fib-8);font-size:var(--fib-8);
+        text-transform:none;letter-spacing:normal;border-radius:var(--fib-5)}
+  .copy-btn:hover{color:var(--ink);background:var(--surface-2);filter:none}
+  .copy-btn.copiado{color:var(--ok);border-color:var(--ok)}
+
+  @media(max-width:480px){
+    .kpis,.kpis--sm{grid-template-columns:1fr 1fr}
+    .conn-card__fields{grid-template-columns:1fr}
+    .conn-card__status{margin-left:0}
+    .auth-card{padding:var(--fib-34) var(--fib-21)}
+  }
+  @media(max-width:360px){ .kpis,.kpis--sm{grid-template-columns:1fr} }
 `;
 
 // Página fora do app shell (login/setup): sem topbar/abas.
@@ -414,13 +463,180 @@ const CHART_JS = `
         +'<text x="'+(ML+w+6)+'" y="'+(yy+bh/2+4)+'" font-size="11" fill="var(--ink-muted)">'+fmtV(val)+'</text></g>'; });
     return s+'</svg></div>';
   }
+
+  // Donut de participação (%) — top 6 fatias, resto some no agregado. opts:{fmt}
+  function svgDonut(dados, campoRot, campoVal, opts){
+    opts = opts || {};
+    if(!dados || !dados.length) return vazio(opts.vazio);
+    const top=dados.slice(0,6), total=top.reduce((s,d)=>s+(+d[campoVal]||0),0);
+    if(total<=0) return vazio(opts.vazio);
+    const W=220,H=220,cx=W/2,cy=H/2,rOut=90,rIn=54, fmtV=opts.fmt||_cpt;
+    let ang=-Math.PI/2, fatias='', leg='';
+    top.forEach((d,i)=>{
+      const val=+d[campoVal]||0, frac=val/total, a2=ang+frac*Math.PI*2, cor=PAL[i%PAL.length];
+      const x1=cx+rOut*Math.cos(ang), y1=cy+rOut*Math.sin(ang), x2=cx+rOut*Math.cos(a2), y2=cy+rOut*Math.sin(a2);
+      const xi1=cx+rIn*Math.cos(a2), yi1=cy+rIn*Math.sin(a2), xi2=cx+rIn*Math.cos(ang), yi2=cy+rIn*Math.sin(ang);
+      const grande=frac>0.5?1:0;
+      fatias+='<path d="M'+x1+','+y1+' A'+rOut+','+rOut+' 0 '+grande+' 1 '+x2+','+y2
+        +' L'+xi1+','+yi1+' A'+rIn+','+rIn+' 0 '+grande+' 0 '+xi2+','+yi2+' Z" fill="'+cor+'">'
+        +'<title>'+_esc(String(d[campoRot]??''))+' — '+fmtV(val)+' ('+(frac*100).toFixed(1)+'%)</title></path>';
+      leg+='<span><i style="background:'+cor+'"></i>'+_esc(String(d[campoRot]??'').slice(0,18))+' · '+(frac*100).toFixed(0)+'%</span>';
+      ang=a2;
+    });
+    return '<div class="chart"><svg viewBox="0 0 '+W+' '+H+'" role="img" style="max-width:220px;margin:0 auto;display:block" preserveAspectRatio="xMidYMid meet">'
+      +fatias+'</svg><div class="leg" style="justify-content:center">'+leg+'</div></div>';
+  }
+`;
+
+// Ajuda textual por conector, complementar ao schema `setup` (label/placeholder) de
+// cada módulo em src/connectors/*.js — evita repetir instrução de onde tirar a credencial.
+const AJUDA_CONECTOR = {
+  shopify: 'Admin → Apps → Desenvolver apps → crie um app privado com escopo de leitura e copie o token shpat_…',
+  ga4: 'No Google Cloud, crie uma Service Account e ative a Analytics Data API. Na propriedade GA4 (Admin → Acesso à propriedade) adicione o e-mail da service account como Leitor, e cole aqui o Property ID + client_email + private key da chave JSON.',
+  meta: 'No Business Manager, gere um token de sistema (System User) com permissão ads_read para a conta de anúncios. O Ad Account ID pode vir com ou sem o prefixo "act_".',
+};
+
+// Um campo de formulário a partir do schema `setup` do conector (mesma fonte que já
+// valida obrigatoriedade no backend — o form nunca inventa um campo que o conector não pede).
+function campoConectorHtml(nome, chave, def) {
+  const id = `f-${esc(nome)}-${esc(chave)}`;
+  const tipo = def.segredo ? 'password' : 'text';
+  return `<div class="field"><label for="${id}">${esc(def.label ?? chave)}${def.obrigatorio ? '' : ' (opcional)'}</label>
+    <input id="${id}" data-campo="${esc(chave)}" type="${tipo}" autocomplete="off"
+      placeholder="${esc(def.placeholder ?? '')}"></div>`;
+}
+
+// Card genérico de conector — mesmo componente no wizard (passo 2/3) e na aba Sistema.
+// Conectado nasce recolhido (só status); não-conectado nasce aberto (precisa do form).
+function cardConector(c, st, { aberto = false, desabilitado = false } = {}) {
+  const status = st?.status ?? 'nao_configurado';
+  const conectado = status === 'conectado';
+  const expandido = aberto || !conectado;
+  const campos = Object.entries(c.setup ?? {}).map(([k, def]) => campoConectorHtml(c.name, k, def)).join('');
+  const ultima = st?.ultimaExecucao;
+  const meta = conectado ? (st.conta ?? 'conectado')
+    : status === 'erro' ? (st.erro ?? 'falha ao validar') : 'não configurado';
+  return `<div class="conn-card conn-card--${esc(status)}" data-conector="${esc(c.name)}" data-expandido="${expandido ? 1 : 0}">
+    <div class="conn-card__head">
+      <span class="conn-card__avatar" aria-hidden="true">${esc((c.label ?? c.name).charAt(0).toUpperCase())}</span>
+      <div class="conn-card__title">
+        <span class="conn-card__name">${esc(c.label ?? c.name)}</span>
+        <span class="conn-card__meta">${esc(meta)}</span>
+      </div>
+      <span class="conn-card__status"><span class="pill ${conectado ? 'ok' : status === 'erro' ? 'err' : ''}">${esc(status)}</span></span>
+      ${conectado ? `<button class="conn-card__toggle" type="button" data-toggle="${esc(c.name)}">${expandido ? 'ocultar' : 'editar'}</button>` : ''}
+    </div>
+    <div class="conn-card__body">
+      ${c.setup ? `<p class="conn-card__help">${esc(AJUDA_CONECTOR[c.name] ?? '')}</p>
+      <div class="conn-card__fields">${campos}</div>` : ''}
+      <div class="conn-card__actions">
+        <button type="button" data-conectar="${esc(c.name)}" ${desabilitado ? 'disabled' : ''}>${conectado ? 'Atualizar credenciais' : 'Conectar'}</button>
+        ${conectado ? `<button class="btn--ghost btn--sm" type="button" data-sync="${esc(c.name)}">Sincronizar agora</button>
+        <button class="btn--ghost btn--sm" type="button" data-desconectar="${esc(c.name)}">Desconectar</button>` : ''}
+      </div>
+      ${ultima ? `<p class="sub">última execução: ${esc(ultima.finished_at ?? '—')}${ultima.records != null ? ` (${ultima.records} reg.)` : ''}${ultima.status === 'erro' ? ` <span class="err">${esc(ultima.error ?? '')}</span>` : ''}</p>` : ''}
+      <div class="conn-card__result" data-resultado="${esc(c.name)}"></div>
+    </div>
+  </div>`;
+}
+
+// JS genérico de conector (conectar/desconectar/sincronizar/copiar) — um único listener
+// delegado, funciona pra qualquer card renderado por cardConector() em qualquer página.
+const CONECTOR_JS = `
+  async function apiConector(metodo, sufixo, corpo){
+    const r = await fetch('/api/conectores/'+sufixo, {
+      method: metodo, headers: corpo ? {'content-type':'application/json'} : undefined,
+      body: corpo ? JSON.stringify(corpo) : undefined,
+    });
+    const d = await r.json().catch(()=>({}));
+    return { ok: r.ok, data: d };
+  }
+  function coletarCampos(card){
+    const dados = {};
+    card.querySelectorAll('[data-campo]').forEach(function(inp){ dados[inp.dataset.campo] = inp.value.trim(); });
+    return dados;
+  }
+  function resultadoEl(nome){ return document.querySelector('[data-resultado="'+nome+'"]'); }
+  async function conectarConector(nome, card){
+    const el = resultadoEl(nome);
+    if (el) el.innerHTML = '<p class="sub">conectando e validando…</p>';
+    const { ok, data } = await apiConector('POST', encodeURIComponent(nome), coletarCampos(card));
+    if (!ok) { if (el) el.innerHTML = '<p class="msg err">'+(data.erro||'falhou')+'</p>'; return; }
+    const info = data.info || {};
+    const conta = info.conta || info.loja || info.propriedade || '';
+    let extra = '';
+    if (data.marca && data.marca.marca) {
+      const cores = (data.marca.graficos || []).map(function(c){ return '<span class="sw" style="background:'+c+'"></span>'; }).join('');
+      extra = '<div class="sub">identidade detectada: '+data.marca.marca+' <span class="swatches">'+cores+'</span></div>';
+    }
+    if (el) el.innerHTML = '<p class="msg ok">✓ conectado'+(conta?(' — '+conta):'')+'</p>'+extra;
+    setTimeout(function(){ location.reload(); }, 1400);
+  }
+  async function desconectarConector(nome){
+    if (!confirm('Desconectar '+nome+'? A sincronização automática para até reconectar.')) return;
+    await apiConector('DELETE', encodeURIComponent(nome));
+    location.reload();
+  }
+  async function sincronizarConector(nome, btn){
+    const original = btn ? btn.textContent : null;
+    if (btn) { btn.disabled = true; btn.textContent = 'sincronizando…'; }
+    const { ok, data } = await apiConector('POST', encodeURIComponent(nome)+'/sync');
+    if (btn) { btn.disabled = false; btn.textContent = original; }
+    const el = resultadoEl(nome);
+    if (el) el.innerHTML = ok ? '<p class="sub">sincronização disparada.</p>' : '<p class="msg err">'+(data.erro||'falhou')+'</p>';
+  }
+  document.addEventListener('click', function(ev){
+    const bC = ev.target.closest('[data-conectar]');
+    if (bC) { if (!bC.disabled) conectarConector(bC.dataset.conectar, bC.closest('.conn-card') || document); return; }
+    const bS = ev.target.closest('[data-sync]');
+    if (bS) { sincronizarConector(bS.dataset.sync, bS); return; }
+    const bD = ev.target.closest('[data-desconectar]');
+    if (bD) { desconectarConector(bD.dataset.desconectar); return; }
+    const bT = ev.target.closest('[data-toggle]');
+    if (bT) {
+      const card = bT.closest('.conn-card');
+      const estaAberto = card.dataset.expandido === '1';
+      card.dataset.expandido = estaAberto ? '0' : '1';
+      bT.textContent = estaAberto ? 'editar' : 'ocultar';
+      return;
+    }
+    const bIr = ev.target.closest('[data-ir-sistema]');
+    if (bIr) {
+      window.__ativarAba && window.__ativarAba('system', true);
+      setTimeout(function(){
+        const alvo = document.querySelector('.conn-card[data-conector="'+bIr.dataset.irSistema+'"]');
+        if (!alvo) return;
+        alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        alvo.style.outline = '2px solid var(--action)'; alvo.style.outlineOffset = '2px';
+        setTimeout(function(){ alvo.style.outline = ''; }, 1600);
+      }, 60);
+      return;
+    }
+    const bCopy = ev.target.closest('[data-copiar]');
+    if (bCopy) {
+      const alvo = document.querySelector(bCopy.dataset.copiar);
+      if (!alvo || !navigator.clipboard) return;
+      let texto = (alvo.textContent || '').trim();
+      if (texto.startsWith('/')) texto = location.origin + texto;
+      navigator.clipboard.writeText(texto).then(function(){
+        const original = bCopy.textContent;
+        bCopy.classList.add('copiado'); bCopy.textContent = 'copiado!';
+        setTimeout(function(){ bCopy.classList.remove('copiado'); bCopy.textContent = original; }, 1400);
+      }).catch(function(){ /* permissão de clipboard negada — falha silenciosa, botão só não reage */ });
+    }
+  });
 `;
 
 export function paginaSetup({ config, conectores, temAdmin, nonce }) {
-  const estado = conectores.estado();
   const marca = config.get('brand');
+  const todosConectores = conectores.todos();
+  const estado = conectores.estado();
+  const estadoDe = (nome) => estado.find(e => e.nome === nome);
+  const shopify = todosConectores.find(c => c.name === 'shopify');
+  const outros = todosConectores.filter(c => c.name !== 'shopify');
+
   const corpo = `<div class="setup-wrap">
-  <div class="auth-head"><h1>Configurar painel</h1><p>Dois passos e o painel está de pé.</p></div>
+  <div class="auth-head"><h1>Configurar painel</h1><p>Três passos e o painel está de pé — os dois últimos dá pra pular e fazer depois.</p></div>
 
   <section class="block">
     <header class="block__head"><div class="block__head-text">
@@ -439,28 +655,22 @@ export function paginaSetup({ config, conectores, temAdmin, nonce }) {
   <section class="block">
     <header class="block__head"><div class="block__head-text">
       <span class="rot">Passo 2</span><h2 class="block__title">Conectar a loja</h2>
-      <span class="block__subtitle">O painel lê a identidade visual da loja e se veste com ela.</span>
+      <span class="block__subtitle">Obrigatório — o painel lê a identidade visual da loja e se veste com ela.</span>
     </div></header>
     <div class="block__body">
-      <div class="field"><label for="shop">Domínio .myshopify.com</label>
-        <input id="shop" placeholder="minha-loja.myshopify.com"></div>
-      <div class="field"><label for="tk">Access token do app (shpat_…)</label>
-        <input id="tk" type="password" placeholder="shpat_..."></div>
-      <button id="btnConectar" type="button" ${temAdmin ? '' : 'disabled'}>Conectar Shopify</button>
+      ${shopify ? cardConector(shopify, estadoDe('shopify'), { aberto: true, desabilitado: !temAdmin }) : ''}
       ${temAdmin ? '' : '<p class="sub">Crie o administrador primeiro.</p>'}
-      <div id="res"></div>
     </div>
   </section>
 
   <section class="block">
     <header class="block__head"><div class="block__head-text">
-      <h2 class="block__title">Integrações</h2></div></header>
-    <div class="block__body"><div class="tbl-wrap"><table>
-      <thead><tr><th>Integração</th><th>Estado</th><th>Conta</th></tr></thead><tbody>
-      ${estado.map(c => `<tr><td>${esc(c.rotulo)}</td>
-        <td><span class="pill ${c.status === 'conectado' ? 'ok' : c.status === 'erro' ? 'err' : ''}">${esc(c.status)}</span></td>
-        <td class="sub">${esc(c.conta ?? '—')}</td></tr>`).join('')}
-      </tbody></table></div></div>
+      <span class="rot">Passo 3 · opcional</span><h2 class="block__title">Anúncios &amp; Analytics</h2>
+      <span class="block__subtitle">Google Analytics 4 e Meta Ads — pode pular e conectar depois em Sistema → Integrações.</span>
+    </div></header>
+    <div class="block__body"><div class="conn-grid">
+      ${outros.map(c => cardConector(c, estadoDe(c.name), { aberto: true, desabilitado: !temAdmin })).join('')}
+    </div></div>
   </section>
 </div>`;
 
@@ -473,19 +683,8 @@ export function paginaSetup({ config, conectores, temAdmin, nonce }) {
     await post('/api/login',{username:u.value,password:p.value});
     location.reload();
   }
-  async function conectar(){
-    const el=document.getElementById('res');
-    el.innerHTML='<div class="msg">conectando e validando…</div>';
-    const {ok,data}=await post('/api/conectores/shopify',{shop:shop.value.trim(),accessToken:tk.value.trim()});
-    if(!ok){el.innerHTML='<div class="msg err">'+(data.erro||'falhou')+'</div>';return}
-    const m=data.marca||{};
-    el.innerHTML='<div class="msg ok">✓ '+(data.info?.loja||'conectada')+' — '+(data.info?.moeda||'')+
-      '</div>'+(m.marca?'<div class="sub">identidade detectada: '+m.marca+
-      ' <span class="swatches">'+(m.graficos||[]).map(c=>'<span class="sw" style="background:'+c+'"></span>').join('')+'</span></div>':'');
-    setTimeout(()=>location.reload(),1800);
-  }
   document.getElementById('btnAdmin')?.addEventListener('click',criarAdmin);
-  document.getElementById('btnConectar')?.addEventListener('click',conectar);`;
+  ${CONECTOR_JS}`;
   return layoutSolo({ titulo: 'Configurar painel', marca, corpo, script, nonce });
 }
 
@@ -609,10 +808,21 @@ export function paginaPainel({ config, conectores, metricas, nonce, usuario = nu
   const marca = config.get('brand');
   const moeda = config.get('store.currency') ?? 'BRL';
   const estado = conectores.estado();
+  const todosConectores = conectores.todos();
   const ativas = metricas.ativas().map(m => m.key);
   const todas = metricas.todas();
   const graficos = marca?.graficos ?? null;
   const nomeLoja = config.get('store.name') ?? 'Painel';
+  const conectorConectado = (nome) => estado.find(e => e.nome === nome)?.status === 'conectado';
+
+  // Banner de chamada pra conectar uma fonte que a aba Ads&Analytics depende — a métrica
+  // em si (ver src/metrics/anuncios.js) só exige shopify, então o "indisponivel()" genérico
+  // não cobre isso; checagem própria aqui evita ficar mudo quando dá vazio sem dizer o porquê.
+  const bannerConectar = (nomeConector, rotulo) => conectorConectado(nomeConector) ? '' : `
+    <div class="banner"><span class="banner__icon" aria-hidden="true">◍</span>
+      <span class="banner__text"><strong>${esc(rotulo)}</strong> ainda não conectado — os dados abaixo ficam vazios até conectar.</span>
+      <button class="btn--sm" type="button" data-ir-sistema="${esc(nomeConector)}">Conectar agora</button>
+    </div>`;
 
   // Métrica indisponível: explicar qual conector falta, não esconder a seção.
   const faltando = (chave) => {
@@ -671,6 +881,8 @@ export function paginaPainel({ config, conectores, metricas, nonce, usuario = nu
 
   <section class="panel" id="panel-ads" role="tabpanel" aria-labelledby="tab-ads">
     ${filtroPeriodo('ads')}
+    ${bannerConectar('meta', 'Meta Ads')}
+    ${bannerConectar('ga4', 'Google Analytics 4')}
     ${blocoM({ id: 'adPlataformas', metrica: 'ads_plataformas', titulo: 'Anúncios por plataforma', subtitulo: 'Gasto, cliques e ROAS reportado pela plataforma',
       dica: 'ROAS aqui usa o valor de conversão REPORTADO pela plataforma, não a receita da Shopify.' })}
     ${blocoM({ id: 'adTrafego', metrica: 'trafego_web', titulo: 'Tráfego web (GA4)', subtitulo: 'Sessões e usuários por dia' })}
@@ -684,25 +896,23 @@ export function paginaPainel({ config, conectores, metricas, nonce, usuario = nu
   </section>
 
   <section class="panel" id="panel-system" role="tabpanel" aria-labelledby="tab-system">
-    ${bloco({ id: 'syIntegracoes', titulo: 'Integrações', subtitulo: 'Estado de cada conector e última execução',
-      corpo: `<div class="tbl-wrap"><table>
-        <thead><tr><th>Integração</th><th>Estado</th><th>Última execução</th></tr></thead><tbody>
-        ${estado.map(c => `<tr><td>${esc(c.rotulo)}</td>
-          <td><span class="pill ${c.status === 'conectado' ? 'ok' : c.status === 'erro' ? 'err' : ''}">${esc(c.status)}</span></td>
-          <td class="sub">${esc(c.ultimaExecucao?.finished_at ?? '—')} ${c.ultimaExecucao?.records != null ? `(${c.ultimaExecucao.records} reg.)` : ''}</td></tr>`).join('')}
-        </tbody></table></div>
-        <p><button id="btnSync" type="button">Sincronizar agora</button> <span id="s" class="sub"></span></p>` })}
+    ${bloco({ id: 'syIntegracoes', titulo: 'Integrações', subtitulo: 'Conecte, sincronize ou desconecte cada fonte de dado',
+      corpo: `<div class="conn-grid">${todosConectores.map(c => cardConector(c, estado.find(e => e.nome === c.name))).join('')}</div>
+        <p style="margin-top:var(--fib-13)"><button id="btnSyncTudo" type="button">Sincronizar tudo</button> <span id="s" class="sub"></span></p>` })}
     ${blocoM({ id: 'sySync', metrica: 'status_sync', titulo: 'Status das sincronizações', subtitulo: 'Quando cada fonte rodou, com status e erro' })}
     ${blocoM({ id: 'syQualidade', metrica: 'qualidade_dado', titulo: 'Qualidade do dado', subtitulo: 'O que falta preencher — transparência, não maquiagem' })}
     ${bloco({ id: 'syApi', titulo: 'API e MCP', subtitulo: 'As mesmas definições servem painel, REST e MCP',
       corpo: `<p class="sub">${ativas.length} de ${todas.length} métricas disponíveis: ${ativas.map(k => `<code>${esc(k)}</code>`).join(' ')}</p>
-        <p class="sub">REST em <code>/api/m/&lt;chave&gt;</code> · OpenAPI em <code>/openapi.json</code> · MCP em <code>/mcp</code>
+        <p class="sub">REST em <code>/api/m/&lt;chave&gt;</code> · OpenAPI em <code id="urlOpenapi">/openapi.json</code>
+        <button class="copy-btn" type="button" data-copiar="#urlOpenapi">copiar</button>
+        · MCP em <code id="urlMcp">/mcp</code> <button class="copy-btn" type="button" data-copiar="#urlMcp">copiar</button>
         · Prometheus em <code>/metrics</code></p>` })}
   </section>`;
 
   const script = `
   window.__GRAF__=${JSON.stringify(graficos)};
   ${CHART_JS}
+  ${CONECTOR_JS}
   const MOEDA=${JSON.stringify(moeda)};
   const fm=v=>v==null?'—':new Intl.NumberFormat('pt-BR',{style:'currency',currency:MOEDA}).format(v);
   const fn=v=>v==null?'—':new Intl.NumberFormat('pt-BR').format(v);
@@ -793,7 +1003,8 @@ export function paginaPainel({ config, conectores, metricas, nonce, usuario = nu
     encher('ovSerie','vendas_diarias',q,d=>svgLinha(d.series||[],'dia','faturamento',{moeda:1,fmt:fm,caption:'Receita por dia'})+
       tabela([{t:'Dia',f:l=>l.dia},{t:'Pedidos',num:1,f:l=>fn(l.pedidos)},
               {t:'Unid.',num:1,f:l=>fn(l.unidades)},{t:'Faturamento',num:1,f:l=>fm(l.faturamento)}],(d.series||[]).slice(-14)));
-    encher('ovCanais','vendas_por_canal',q,d=>svgBarras(d.canais||[],'canal','faturamento',{moeda:1,fmt:fm})+
+    encher('ovCanais','vendas_por_canal',q,d=>svgDonut(d.canais||[],'canal','faturamento',{fmt:fm})+
+      svgBarras(d.canais||[],'canal','faturamento',{moeda:1,fmt:fm})+
       tabela([{t:'Canal',f:l=>l.canal},{t:'Pedidos',num:1,f:l=>fn(l.pedidos)},
               {t:'Faturamento',num:1,f:l=>fm(l.faturamento)}],d.canais));
     encher('ovProdutos','mais_vendidos',{...q,limite:10},d=>
@@ -893,6 +1104,7 @@ export function paginaPainel({ config, conectores, metricas, nonce, usuario = nu
   async function carregarAds(){
     const q={de:periodoDe('ads'),ate:periodoAte('ads')};
     encher('adPlataformas','ads_plataformas',q,d=>
+      svgBarras(d.plataformas||[],'plataforma','gasto',{moeda:1,fmt:fm,vazio:'Sem gasto de anúncio no período.'})+
       tabela([{t:'Plataforma',f:l=>l.plataforma},{t:'Gasto',num:1,f:l=>fm(l.gasto)},
               {t:'Impressões',num:1,f:l=>fn(l.impressoes)},{t:'Cliques',num:1,f:l=>fn(l.cliques)},
               {t:'Conversões',num:1,f:l=>fr(l.conversoes)},{t:'Valor conv.',num:1,f:l=>fm(l.valor_conversao)},
@@ -930,14 +1142,14 @@ export function paginaPainel({ config, conectores, metricas, nonce, usuario = nu
     });
   }
 
-  async function sincronizar(){
-    const el=document.getElementById('s'); el.textContent='sincronizando…';
-    try{
-      const r=await fetch('/api/conectores/shopify/sync',{method:'POST'});
-      const d=await r.json().catch(()=>({}));
-      el.textContent=r.ok?('ok — '+(d.registros!=null?d.registros+' registros':'concluído')):'falhou';
-      if(r.ok) setTimeout(()=>location.reload(),1500);
-    }catch(e){ el.textContent='falha de conexão'; }
+  async function sincronizarTudo(){
+    const el=document.getElementById('s');
+    const nomes=${JSON.stringify(estado.filter(e => e.status === 'conectado').map(e => e.nome))};
+    if(!nomes.length){ el.textContent='nenhum conector conectado'; return; }
+    el.textContent='sincronizando '+nomes.join(', ')+'…';
+    for(const nome of nomes){ await sincronizarConector(nome); }
+    el.textContent='concluído';
+    setTimeout(()=>location.reload(),1200);
   }
   async function sair(){
     try{ await fetch('/api/logout',{method:'POST'}); }catch(e){}
@@ -963,7 +1175,7 @@ export function paginaPainel({ config, conectores, metricas, nonce, usuario = nu
   }));
   document.getElementById('btnBuscar')?.addEventListener('click',buscarProduto);
   document.getElementById('qProduto')?.addEventListener('keydown',e=>{if(e.key==='Enter')buscarProduto()});
-  document.getElementById('btnSync')?.addEventListener('click',sincronizar);
+  document.getElementById('btnSyncTudo')?.addEventListener('click',sincronizarTudo);
   document.getElementById('btnSair')?.addEventListener('click',sair);
   document.getElementById('headerLogo')?.addEventListener('error',function(){ this.remove(); });`;
 

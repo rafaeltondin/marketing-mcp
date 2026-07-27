@@ -2,6 +2,22 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.4.0] — 2026-07-27
+
+### Adicionado
+- **Card genérico de conector** (`cardConector`), gerado a partir do schema `setup` que cada
+  conector já declara (`src/connectors/*.js`) — mesmo componente no wizard de setup e na aba
+  Sistema. Passo 3 (opcional) no wizard: conectar GA4/Meta Ads direto, sem precisar de API/curl.
+  Aba Sistema ganhou conectar/atualizar credenciais/sincronizar/desconectar por conector — antes
+  só existia leitura de status, e só Shopify tinha formulário.
+- Banner de aviso na aba Tráfego & Ads quando Meta/GA4 não está conectado, com atalho que pula
+  pra aba Sistema e destaca o card certo.
+- Gráfico de barras em "Anúncios por plataforma" (antes só tabela) e donut de participação (%)
+  em "Vendas por canal", complementando a barra existente.
+- Botão "Sincronizar tudo" (antes só sincronizava Shopify, mesmo com Meta/GA4 conectados) e botão
+  de copiar URL absoluta do MCP/OpenAPI na aba Sistema.
+- Breakpoints novos (480px/360px) pros cards de conector e KPIs em telas bem pequenas.
+
 ## [0.3.2] — 2026-07-26
 
 ### Alterado
