@@ -2,6 +2,16 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.3.2] — 2026-07-26
+
+### Alterado
+- Gráficos SVG reescritos no estilo do Painel Fiber, muito mais legíveis: eixo Y com valores
+  (compactos — `R$ 5k`, `1,2M`), eixo X com datas (`dd/mm`), grid horizontal tracejado,
+  gradiente na área e **tooltip no hover** (via `<title>` por coluna/barra — mostra o valor
+  cheio). Barras horizontais ganharam o valor ao lado e destaque de coluna no hover. Aspect
+  ratio corrigido (o `preserveAspectRatio="none"` antigo achatava/esticava o traçado). As cores
+  seguem a paleta acessível derivada da marca de cada loja — nada da cor do Fiber é hardcodado.
+
 ## [0.3.1] — 2026-07-25
 
 ### Corrigido
