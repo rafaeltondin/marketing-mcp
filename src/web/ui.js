@@ -177,7 +177,12 @@ const BASE = () => `
   .msg{padding:var(--fib-13);border-radius:var(--fib-8);border:var(--fib-1) solid var(--line);
         margin:var(--fib-13) 0;font-size:var(--fib-13)}
   .sub{color:var(--ink-2);font-size:var(--fib-13)}
-  .chart{width:100%;height:auto;display:block}
+  .chart{width:100%;margin-bottom:var(--fib-13);display:flex;flex-direction:column;gap:var(--fib-5)}
+  .chart svg{width:100%;height:auto;display:block;overflow:visible}
+  .chart svg text{font-family:inherit}
+  .chart svg g:hover rect[fill=transparent]{fill:color-mix(in srgb,var(--ink) 5%,transparent)}
+  .chart__caption{font-size:var(--fib-8);color:var(--ink-muted);text-align:center;
+        text-transform:uppercase;letter-spacing:.1em;font-weight:700}
   .leg{display:flex;gap:var(--fib-13);flex-wrap:wrap;margin-top:var(--fib-8);font-size:var(--fib-8);
         color:var(--ink-2)}
   .leg span{display:inline-flex;align-items:center;gap:var(--fib-3)}
@@ -348,28 +353,66 @@ const ABAS_JS = `
 `;
 
 // Gráficos SVG sem dependência, sobre a paleta acessível derivada da marca.
+// Espelham o estilo do Painel Fiber: grid horizontal tracejado, eixos rotulados,
+// gradiente na área e tooltip nativo no hover (via <title> por coluna/barra).
 const CHART_JS = `
   const PAL = window.__GRAF__ || ['#3a6ea5','#1a7f4b','#8a6100','#8e44ad','#b3261e'];
-  function svgLinha(dados, campoX, campoY){
-    if(!dados||dados.length<2) return vazio();
-    const W=680,H=170,P=28, ys=dados.map(d=>+d[campoY]||0), max=Math.max(...ys,1), min=Math.min(...ys,0);
-    const x=i=>P+i*(W-2*P)/(dados.length-1), y=v=>H-P-(v-min)/((max-min)||1)*(H-2*P);
-    const pts=dados.map((d,i)=>x(i)+','+y(+d[campoY]||0)).join(' ');
-    const area='M'+P+','+(H-P)+' L'+pts.replaceAll(' ',' L')+' L'+(W-P)+','+(H-P)+' Z';
-    return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img">'
-      +'<path d="'+area+'" fill="'+PAL[0]+'" opacity="0.12"/>'
-      +'<polyline points="'+pts+'" fill="none" stroke="'+PAL[0]+'" stroke-width="2.5" stroke-linejoin="round"/>'
-      +'</svg>';
+  let _gid = 0;
+  const _cpt = v => { v=+v||0; const a=Math.abs(v);
+    if(a>=1e6) return (v/1e6).toFixed(a>=1e7?0:1).replace('.',',').replace(',0','')+'M';
+    if(a>=1e3) return (v/1e3).toFixed(a>=1e4?0:1).replace('.',',').replace(',0','')+'k';
+    return String(Math.round(v)); };
+  const _cBRL = v => 'R$ '+_cpt(v);
+  const _diaMes = s => { s=String(s||''); const m=s.slice(5,7),d=s.slice(8,10); return (d&&m)?d+'/'+m:s; };
+  const _esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const _niceMax = v => { if(v<=0) return 1; const e=Math.pow(10,Math.floor(Math.log10(v))),f=v/e;
+    return (f<=1?1:f<=2?2:f<=5?5:10)*e; };
+
+  // Gráfico de área temporal com eixos. opts:{moeda, caption, fmt}
+  function svgLinha(dados, campoX, campoY, opts){
+    opts = opts || {};
+    if(!dados || dados.length < 2) return vazio(opts.vazio);
+    const W=720,H=240,ML=54,MR=13,MT=13,MB=26, iw=W-ML-MR, ih=H-MT-MB;
+    const max=_niceMax(Math.max(...dados.map(d=>+d[campoY]||0),1)), min=0;
+    const x=i=>ML+i*iw/(dados.length-1), y=v=>MT+ih-(v-min)/((max-min)||1)*ih;
+    const fmtY=opts.moeda?_cBRL:_cpt, fmtT=opts.fmt||(opts.moeda?_cBRL:_cpt), gid='g'+(_gid++);
+    let grid='',ylab='';
+    for(let i=0;i<=4;i++){ const val=min+(max-min)*i/4, gy=y(val);
+      grid+='<line x1="'+ML+'" y1="'+gy+'" x2="'+(W-MR)+'" y2="'+gy+'" stroke="var(--line)" stroke-dasharray="3 3"/>';
+      ylab+='<text x="'+(ML-8)+'" y="'+(gy+4)+'" text-anchor="end" font-size="11" fill="var(--ink-muted)">'+fmtY(val)+'</text>'; }
+    let xlab=''; const passo=Math.max(1,Math.ceil(dados.length/7));
+    for(let i=0;i<dados.length;i+=passo)
+      xlab+='<text x="'+x(i)+'" y="'+(H-7)+'" text-anchor="middle" font-size="11" fill="var(--ink-muted)">'+_esc(_diaMes(dados[i][campoX]))+'</text>';
+    const pts=dados.map((d,i)=>x(i)+','+y(+d[campoY]||0));
+    const area='M'+x(0)+','+(MT+ih)+' L'+pts.join(' L')+' L'+x(dados.length-1)+','+(MT+ih)+' Z';
+    let dots='',hit=''; const cw=iw/Math.max(dados.length-1,1);
+    dados.forEach((d,i)=>{ dots+='<circle cx="'+x(i)+'" cy="'+y(+d[campoY]||0)+'" r="2.5" fill="'+PAL[0]+'"/>';
+      hit+='<g><rect x="'+(x(i)-cw/2)+'" y="'+MT+'" width="'+cw+'" height="'+ih+'" fill="transparent"/>'
+        +'<title>'+_esc(_diaMes(d[campoX]))+' — '+fmtT(+d[campoY]||0)+'</title></g>'; });
+    return '<div class="chart"><svg viewBox="0 0 '+W+' '+H+'" role="img" preserveAspectRatio="xMidYMid meet">'
+      +'<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1">'
+      +'<stop offset="0%" stop-color="'+PAL[0]+'" stop-opacity="0.28"/>'
+      +'<stop offset="100%" stop-color="'+PAL[0]+'" stop-opacity="0.02"/></linearGradient></defs>'
+      +grid+'<path d="'+area+'" fill="url(#'+gid+')"/>'
+      +'<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+PAL[0]+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
+      +dots+ylab+xlab+hit+'</svg>'
+      +(opts.caption?'<span class="chart__caption">'+_esc(opts.caption)+'</span>':'')+'</div>';
   }
-  function svgBarras(dados, campoRot, campoVal){
-    if(!dados||!dados.length) return vazio();
-    const top=dados.slice(0,8), max=Math.max(...top.map(d=>+d[campoVal]||0),1);
-    const W=680,bh=26,gap=8,H=top.length*(bh+gap)+8;
-    let s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img">';
-    top.forEach((d,i)=>{const w=(+d[campoVal]||0)/max*(W-180),yy=i*(bh+gap)+4,cor=PAL[i%PAL.length];
-      s+='<rect x="150" y="'+yy+'" width="'+Math.max(w,1)+'" height="'+bh+'" rx="4" fill="'+cor+'"/>'
-        +'<text x="0" y="'+(yy+bh/2+4)+'" font-size="12" fill="currentColor" opacity=".75">'+String(d[campoRot]??'').slice(0,20)+'</text>';});
-    return s+'</svg>';
+
+  // Barras horizontais (ranking). opts:{moeda, fmt}
+  function svgBarras(dados, campoRot, campoVal, opts){
+    opts = opts || {};
+    if(!dados || !dados.length) return vazio(opts.vazio);
+    const top=dados.slice(0,8), max=_niceMax(Math.max(...top.map(d=>+d[campoVal]||0),1));
+    const W=720,ML=150,MR=64,bh=24,gap=12,H=top.length*(bh+gap)+4, iw=W-ML-MR;
+    const fmtV=opts.fmt||(opts.moeda?_cBRL:_cpt);
+    let s='<div class="chart"><svg viewBox="0 0 '+W+' '+H+'" role="img" preserveAspectRatio="xMidYMid meet">';
+    top.forEach((d,i)=>{ const val=+d[campoVal]||0, w=Math.max(val/max*iw,2), yy=i*(bh+gap)+2, cor=PAL[i%PAL.length];
+      s+='<g><title>'+_esc(String(d[campoRot]??''))+' — '+fmtV(val)+'</title>'
+        +'<text x="'+(ML-8)+'" y="'+(yy+bh/2+4)+'" text-anchor="end" font-size="12" fill="var(--ink-2)">'+_esc(String(d[campoRot]??'').slice(0,22))+'</text>'
+        +'<rect x="'+ML+'" y="'+yy+'" width="'+w+'" height="'+bh+'" rx="4" fill="'+cor+'"/>'
+        +'<text x="'+(ML+w+6)+'" y="'+(yy+bh/2+4)+'" font-size="11" fill="var(--ink-muted)">'+fmtV(val)+'</text></g>'; });
+    return s+'</svg></div>';
   }
 `;
 
@@ -747,10 +790,10 @@ export function paginaPainel({ config, conectores, metricas, nonce, usuario = nu
       kpi({label:'Reembolsos',valor:fm(k.reembolsos),invertido:1}),
     ].join('');
 
-    encher('ovSerie','vendas_diarias',q,d=>svgLinha(d.series||[],'dia','faturamento')+
+    encher('ovSerie','vendas_diarias',q,d=>svgLinha(d.series||[],'dia','faturamento',{moeda:1,fmt:fm,caption:'Receita por dia'})+
       tabela([{t:'Dia',f:l=>l.dia},{t:'Pedidos',num:1,f:l=>fn(l.pedidos)},
               {t:'Unid.',num:1,f:l=>fn(l.unidades)},{t:'Faturamento',num:1,f:l=>fm(l.faturamento)}],(d.series||[]).slice(-14)));
-    encher('ovCanais','vendas_por_canal',q,d=>svgBarras(d.canais||[],'canal','faturamento')+
+    encher('ovCanais','vendas_por_canal',q,d=>svgBarras(d.canais||[],'canal','faturamento',{moeda:1,fmt:fm})+
       tabela([{t:'Canal',f:l=>l.canal},{t:'Pedidos',num:1,f:l=>fn(l.pedidos)},
               {t:'Faturamento',num:1,f:l=>fm(l.faturamento)}],d.canais));
     encher('ovProdutos','mais_vendidos',{...q,limite:10},d=>
@@ -774,13 +817,13 @@ export function paginaPainel({ config, conectores, metricas, nonce, usuario = nu
         kpi({label:'Unidades',valor:fn(a.unidades),delta:v.unidades,hint:ref}),
       ].join('');
     }
-    encher('slSerie','vendas_diarias',q,d=>svgLinha(d.series||[],'dia','faturamento')+
+    encher('slSerie','vendas_diarias',q,d=>svgLinha(d.series||[],'dia','faturamento',{moeda:1,fmt:fm,caption:'Receita por dia'})+
       tabela([{t:'Dia',f:l=>l.dia},{t:'Pedidos',num:1,f:l=>fn(l.pedidos)},
               {t:'Unid.',num:1,f:l=>fn(l.unidades)},{t:'Faturamento',num:1,f:l=>fm(l.faturamento)}],d.series));
-    encher('slCanais','vendas_por_canal',q,d=>svgBarras(d.canais||[],'canal','faturamento')+
+    encher('slCanais','vendas_por_canal',q,d=>svgBarras(d.canais||[],'canal','faturamento',{moeda:1,fmt:fm})+
       tabela([{t:'Canal',f:l=>l.canal},{t:'Tipo',f:l=>l.tipo??'—'},{t:'Pedidos',num:1,f:l=>fn(l.pedidos)},
               {t:'Faturamento',num:1,f:l=>fm(l.faturamento)}],d.canais));
-    encher('slOrigens','vendas_por_origem',q,d=>svgBarras(d.origens||[],'origem','faturamento')+
+    encher('slOrigens','vendas_por_origem',q,d=>svgBarras(d.origens||[],'origem','faturamento',{moeda:1,fmt:fm})+
       tabela([{t:'Origem',f:l=>l.origem},{t:'Pedidos',num:1,f:l=>fn(l.pedidos)},
               {t:'Faturamento',num:1,f:l=>fm(l.faturamento)}],d.origens));
   }
@@ -854,7 +897,7 @@ export function paginaPainel({ config, conectores, metricas, nonce, usuario = nu
               {t:'Impressões',num:1,f:l=>fn(l.impressoes)},{t:'Cliques',num:1,f:l=>fn(l.cliques)},
               {t:'Conversões',num:1,f:l=>fr(l.conversoes)},{t:'Valor conv.',num:1,f:l=>fm(l.valor_conversao)},
               {t:'ROAS plat.',num:1,f:l=>l.roas_plataforma==null?'—':fr(l.roas_plataforma)}],d.plataformas));
-    encher('adTrafego','trafego_web',q,d=>svgLinha(d.dias||d.series||[],'dia','sessoes')+
+    encher('adTrafego','trafego_web',q,d=>svgLinha(d.dias||d.series||[],'dia','sessoes',{fmt:fn,caption:'Sessões por dia'})+
       tabela([{t:'Dia',f:l=>l.dia},{t:'Sessões',num:1,f:l=>fn(l.sessoes)},
               {t:'Usuários',num:1,f:l=>fn(l.usuarios)},{t:'Engajadas',num:1,f:l=>fn(l.sessoes_engajadas)},
               {t:'Conversões',num:1,f:l=>fr(l.conversoes)}],(d.dias||d.series||[]).slice(-14)));
