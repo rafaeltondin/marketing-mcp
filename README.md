@@ -1,4 +1,4 @@
-# storekit
+# marketing-mcp
 
 **Painel + ETL + MCP + RAG multi-loja Shopify numa única imagem Docker — uma métrica, uma implementação, três superfícies.**
 **Panel + ETL + MCP + RAG multi-store Shopify in a single Docker image — one metric, one implementation, three surfaces.**
@@ -20,7 +20,7 @@
 
 ### O que é
 
-`storekit` conecta uma loja (Shopify, Meta Ads, GA4) e serve os **mesmos números** por três superfícies geradas de **uma única definição de métrica**: painel web server-rendered, API REST e servidor **Model Context Protocol** (MCP) para agentes de IA como Claude Code, Claude Desktop ou Cursor.
+`marketing-mcp` conecta uma loja (Shopify, Meta Ads, GA4) e serve os **mesmos números** por três superfícies geradas de **uma única definição de métrica**: painel web server-rendered, API REST e servidor **Model Context Protocol** (MCP) para agentes de IA como Claude Code, Claude Desktop ou Cursor.
 
 Um fato, uma fonte; uma métrica, uma implementação — nunca duas queries calculando "a mesma coisa" e divergindo.
 
@@ -28,7 +28,7 @@ Um fato, uma fonte; uma métrica, uma implementação — nunca duas queries cal
 
 Dashboards de e-commerce costumam ter a mesma métrica implementada três vezes — uma no painel, uma na API, uma no que o agente de IA consulta — e elas divergem. O faturamento do gráfico não bate com o do endpoint, que não bate com o que o bot respondeu.
 
-`storekit` mata isso na raiz: cada métrica é declarada **uma vez** num registry (`src/metrics/*.js`) e daí derivam sozinhas a rota REST, a tool MCP e o verbete de glossário. O agente de IA responde **exatamente** o número do painel, porque é o mesmo código.
+`marketing-mcp` mata isso na raiz: cada métrica é declarada **uma vez** num registry (`src/metrics/*.js`) e daí derivam sozinhas a rota REST, a tool MCP e o verbete de glossário. O agente de IA responde **exatamente** o número do painel, porque é o mesmo código.
 
 - **Sem build step** — UI server-rendered, um processo, cold start baixo.
 - **Cifrado at-rest** — banco SQLCipher; PII em AES-256-GCM; credenciais da loja no banco, nunca em env (env vaza em `docker inspect` e logs de orquestrador).
@@ -41,8 +41,8 @@ Dashboards de e-commerce costumam ter a mesma métrica implementada três vezes 
 #### Opção 1 — Docker Compose (recomendado)
 
 ```bash
-git clone https://github.com/rafaeltondin/storekit.git
-cd storekit
+git clone https://github.com/rafaeltondin/marketing-mcp.git
+cd marketing-mcp
 cp .env.example .env
 npm run genkeys >> .env          # gera DB_KEY, PII_KEY, JWT_SECRET, MCP_TOKEN
 docker compose up -d             # painel em http://localhost:3000
@@ -53,8 +53,8 @@ Abra o painel, crie o administrador e cole o domínio `.myshopify.com` + access 
 #### Opção 2 — Local (Node ≥ 20)
 
 ```bash
-git clone https://github.com/rafaeltondin/storekit.git
-cd storekit
+git clone https://github.com/rafaeltondin/marketing-mcp.git
+cd marketing-mcp
 npm ci
 npm run genkeys >> .env
 DATA_DIR=./data node src/main.js
@@ -69,7 +69,7 @@ O MCP fala **Streamable HTTP (stateless)** em `POST /mcp`, autenticado por `MCP_
 ```json
 {
   "mcpServers": {
-    "storekit-minhaloja": {
+    "marketing-mcp-minhaloja": {
       "type": "http",
       "url": "https://minhaloja.exemplo.com/mcp",
       "headers": { "Authorization": "Bearer SEU_MCP_TOKEN" }
@@ -84,7 +84,7 @@ Modo stdio para Desktop e outros detalhes em [`docs/mcp.md`](./docs/mcp.md).
 
 Depois de configurar, no cliente MCP peça:
 
-> "Rode `status_sync` do storekit."
+> "Rode `status_sync` do marketing-mcp."
 
 Se responder com a data da última sincronização de cada conector, o server está saudável e falando com o banco.
 
@@ -206,7 +206,7 @@ MIT. Ver [LICENSE](./LICENSE).
 
 ### What it is
 
-`storekit` connects a store (Shopify, Meta Ads, GA4) and serves the **same numbers** across three surfaces generated from **a single metric definition**: a server-rendered web panel, a REST API, and a **Model Context Protocol** (MCP) server for AI agents like Claude Code, Claude Desktop, or Cursor.
+`marketing-mcp` connects a store (Shopify, Meta Ads, GA4) and serves the **same numbers** across three surfaces generated from **a single metric definition**: a server-rendered web panel, a REST API, and a **Model Context Protocol** (MCP) server for AI agents like Claude Code, Claude Desktop, or Cursor.
 
 One fact, one source; one metric, one implementation — never two queries computing "the same thing" and drifting apart.
 
@@ -214,7 +214,7 @@ One fact, one source; one metric, one implementation — never two queries compu
 
 E-commerce dashboards tend to implement the same metric three times — one in the panel, one in the API, one in whatever the AI agent queries — and they drift. The revenue on the chart doesn't match the endpoint, which doesn't match what the bot answered.
 
-`storekit` kills that at the root: every metric is declared **once** in a registry (`src/metrics/*.js`), and from it the REST route, the MCP tool, and the glossary entry derive themselves. The AI agent returns **exactly** the panel's number, because it's the same code.
+`marketing-mcp` kills that at the root: every metric is declared **once** in a registry (`src/metrics/*.js`), and from it the REST route, the MCP tool, and the glossary entry derive themselves. The AI agent returns **exactly** the panel's number, because it's the same code.
 
 - **No build step** — server-rendered UI, single process, low cold start.
 - **Encrypted at-rest** — SQLCipher database; PII in AES-256-GCM; store credentials in the DB, never in env (env leaks via `docker inspect` and orchestrator logs).
@@ -227,8 +227,8 @@ E-commerce dashboards tend to implement the same metric three times — one in t
 #### Option 1 — Docker Compose (recommended)
 
 ```bash
-git clone https://github.com/rafaeltondin/storekit.git
-cd storekit
+git clone https://github.com/rafaeltondin/marketing-mcp.git
+cd marketing-mcp
 cp .env.example .env
 npm run genkeys >> .env          # generates DB_KEY, PII_KEY, JWT_SECRET, MCP_TOKEN
 docker compose up -d             # panel at http://localhost:3000
@@ -239,8 +239,8 @@ Open the panel, create the admin user, and paste the `.myshopify.com` domain + a
 #### Option 2 — Local (Node ≥ 20)
 
 ```bash
-git clone https://github.com/rafaeltondin/storekit.git
-cd storekit
+git clone https://github.com/rafaeltondin/marketing-mcp.git
+cd marketing-mcp
 npm ci
 npm run genkeys >> .env
 DATA_DIR=./data node src/main.js
@@ -255,7 +255,7 @@ Claude Code / Claude Desktop (`~/.claude/settings.json`):
 ```json
 {
   "mcpServers": {
-    "storekit-mystore": {
+    "marketing-mcp-mystore": {
       "type": "http",
       "url": "https://mystore.example.com/mcp",
       "headers": { "Authorization": "Bearer YOUR_MCP_TOKEN" }
